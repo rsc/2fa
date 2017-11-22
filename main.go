@@ -55,7 +55,7 @@
 // Or to type less:
 //
 //	$ 2fa
-//	268346  	github
+//	268346	github
 //	$
 //
 package main
@@ -285,10 +285,14 @@ func (c *Keychain) show(name string) {
 func (c *Keychain) showAll() {
 	var names []string
 	max := 0
-	for name := range c.keys {
+	maxDigits := 0
+	for name, k := range c.keys {
 		names = append(names, name)
 		if max < len(name) {
 			max = len(name)
+		}
+		if max < k.digits {
+			max = k.digits
 		}
 	}
 	sort.Strings(names)
@@ -298,7 +302,7 @@ func (c *Keychain) showAll() {
 		if k.offset == 0 {
 			code = c.code(name)
 		}
-		fmt.Printf("%-8s\t%s\n", code, name)
+		fmt.Printf("%-*s\t%s\n", maxDigits, code, name)
 	}
 }
 

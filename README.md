@@ -54,5 +54,5 @@ Then whenever GitHub prompts for a 2FA code, run 2fa to obtain one:
 Or to type less:
 
     $ 2fa
-    268346  	github
+    268346	github
     $ 
