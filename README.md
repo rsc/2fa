@@ -8,7 +8,7 @@ Usage:
     2fa -list
     2fa name
 
-“`2fa -add name`” adds a new key to the 2fa keychain with the given name. It
+`2fa -add name` adds a new key to the 2fa keychain with the given name. It
 prints a prompt to standard error and reads a two-factor key from standard
 input. Two-factor keys are short case-insensitive strings of letters A-Z and
 digits 2-7.
@@ -19,10 +19,13 @@ By default the new key generates time-based (TOTP) authentication codes; the
 By default the new key generates 6-digit codes; the `-7` and `-8` flags select
 7- and 8-digit codes instead.
 
-“`2fa -list`” lists the names of all the keys in the keychain.
+`2fa -list` lists the names of all the keys in the keychain.
 
-“`2fa name`” prints a two-factor authentication code from the key with the
+`2fa name` prints a two-factor authentication code from the key with the
 given name.
+
+With no arguments, `2fa` prints two-factor authentication codes from all
+known time-based keys.
 
 The default time-based authentication codes are derived from a hash of the
 key and the current time, so it is important that the system clock have at
@@ -47,3 +50,9 @@ Then whenever GitHub prompts for a 2FA code, run 2fa to obtain one:
     $ 2fa github
     268346
     $
+
+Or to type less:
+
+    $ 2fa
+    268346  	github
+    $ 

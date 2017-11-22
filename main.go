@@ -25,6 +25,9 @@
 // “2fa name” prints a two-factor authentication code from the key with the
 // given name.
 //
+// With no arguments, 2fa prints two-factor authentication codes from all
+// known time-based keys.
+//
 // The default time-based authentication codes are derived from a hash of
 // the key and the current time, so it is important that the system clock have
 // at least one-minute accuracy.
@@ -47,6 +50,12 @@
 //
 //	$ 2fa github
 //	268346
+//	$
+//
+// Or to type less:
+//
+//	$ 2fa
+//	268346  	github
 //	$
 //
 package main
@@ -100,6 +109,10 @@ func main() {
 			usage()
 		}
 		k.list()
+		return
+	}
+	if flag.NArg() == 0 && !*flagAdd {
+		k.showAll()
 		return
 	}
 	if flag.NArg() != 1 {
@@ -235,7 +248,7 @@ func (c *Keychain) add(name string) {
 	}
 }
 
-func (c *Keychain) show(name string) {
+func (c *Keychain) code(name string) string {
 	k, ok := c.keys[name]
 	if !ok {
 		log.Fatalf("no such key %q", name)
@@ -262,8 +275,31 @@ func (c *Keychain) show(name string) {
 		// Time-based key.
 		code = totp(k.raw, time.Now(), k.digits)
 	}
+	return fmt.Sprintf("%0*d", k.digits, code)
+}
 
-	fmt.Printf("%0*d\n", k.digits, code)
+func (c *Keychain) show(name string) {
+	fmt.Printf("%s\n", c.code(name))
+}
+
+func (c *Keychain) showAll() {
+	var names []string
+	max := 0
+	for name := range c.keys {
+		names = append(names, name)
+		if max < len(name) {
+			max = len(name)
+		}
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		k := c.keys[name]
+		code := strings.Repeat("-", k.digits)
+		if k.offset == 0 {
+			code = c.code(name)
+		}
+		fmt.Printf("%-8s\t%s\n", code, name)
+	}
 }
 
 func decodeKey(key string) ([]byte, error) {
