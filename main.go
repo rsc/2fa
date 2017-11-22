@@ -221,7 +221,7 @@ func (c *Keychain) add(name string) {
 	fmt.Fprintf(os.Stderr, "2fa key for %s: ", name)
 	text, err := bufio.NewReader(os.Stdin).ReadString('\n')
 	if err != nil {
-		log.Fatal("error reading key: %v", err)
+		log.Fatalf("error reading key: %v", err)
 	}
 	text = text[:len(text)-1] // chop \n
 	if _, err := decodeKey(text); err != nil {
@@ -241,10 +241,10 @@ func (c *Keychain) add(name string) {
 	f.Chmod(0600)
 
 	if _, err := f.Write([]byte(line)); err != nil {
-		log.Fatal("adding key: %v", err)
+		log.Fatalf("adding key: %v", err)
 	}
 	if err := f.Close(); err != nil {
-		log.Fatal("adding key: %v", err)
+		log.Fatalf("adding key: %v", err)
 	}
 }
 
