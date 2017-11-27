@@ -73,6 +73,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -223,7 +224,9 @@ func (c *Keychain) add(name string) {
 	if err != nil {
 		log.Fatalf("error reading key: %v", err)
 	}
-	text = text[:len(text)-1] // chop \n
+
+	// strip all whitespace, including the \n at the end
+	text = regexp.MustCompile(`\s`).ReplaceAllString(text, "")
 	if _, err := decodeKey(text); err != nil {
 		log.Fatalf("invalid key: %v", err)
 	}
