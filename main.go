@@ -207,6 +207,13 @@ func (c *Keychain) list() {
 	}
 }
 
+func noSpace(r rune) rune {
+	if unicode.IsSpace(r) {
+		return -1
+	}
+	return r
+}
+
 func (c *Keychain) add(name string) {
 	size := 6
 	if *flag7 {
@@ -223,7 +230,7 @@ func (c *Keychain) add(name string) {
 	if err != nil {
 		log.Fatalf("error reading key: %v", err)
 	}
-	text = text[:len(text)-1] // chop \n
+	text = strings.Map(noSpace, text)
 	if _, err := decodeKey(text); err != nil {
 		log.Fatalf("invalid key: %v", err)
 	}
