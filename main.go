@@ -314,6 +314,13 @@ func (c *Keychain) showAll() {
 }
 
 func decodeKey(key string) ([]byte, error) {
+	// auto-padding
+	mod := len(key) % 8
+
+	if mod != 0 {
+		key += strings.Repeat("=", (8 - mod))
+	}
+
 	return base32.StdEncoding.DecodeString(strings.ToUpper(key))
 }
 
