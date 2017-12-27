@@ -298,8 +298,8 @@ func (c *Keychain) showAll() {
 		if max < len(name) {
 			max = len(name)
 		}
-		if max < k.digits {
-			max = k.digits
+		if maxDigits < k.digits {
+			maxDigits = k.digits
 		}
 	}
 	sort.Strings(names)
