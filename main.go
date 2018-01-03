@@ -8,7 +8,7 @@
 //
 //	2fa -add [-7] [-8] [-hotp] name
 //	2fa -list
-//	2fa name
+//	2fa [-clip] name
 //
 // “2fa -add name” adds a new key to the 2fa keychain with the given name.
 // It prints a prompt to standard error and reads a two-factor key from standard input.
@@ -23,7 +23,8 @@
 // “2fa -list” lists the names of all the keys in the keychain.
 //
 // “2fa name” prints a two-factor authentication code from the key with the
-// given name.
+// given name. If “-clip” is specified, 2fa also copies the code to the system
+// clipboard.
 //
 // With no arguments, 2fa prints two-factor authentication codes from all
 // known time-based keys.
@@ -78,6 +79,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/atotto/clipboard"
 )
 
 var (
@@ -86,13 +89,14 @@ var (
 	flagHotp = flag.Bool("hotp", false, "add key as HOTP (counter-based) key")
 	flag7    = flag.Bool("7", false, "generate 7-digit code")
 	flag8    = flag.Bool("8", false, "generate 8-digit code")
+	flagClip = flag.Bool("clip", false, "copy code to the clipboard")
 )
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "usage:\n")
 	fmt.Fprintf(os.Stderr, "\t2fa -add [-7] [-8] [-hotp] keyname\n")
 	fmt.Fprintf(os.Stderr, "\t2fa -list\n")
-	fmt.Fprintf(os.Stderr, "\t2fa keyname\n")
+	fmt.Fprintf(os.Stderr, "\t2fa [-clip] keyname\n")
 	os.Exit(2)
 }
 
@@ -112,6 +116,9 @@ func main() {
 		return
 	}
 	if flag.NArg() == 0 && !*flagAdd {
+		if *flagClip {
+			usage()
+		}
 		k.showAll()
 		return
 	}
@@ -123,6 +130,9 @@ func main() {
 		log.Fatal("name must not contain spaces")
 	}
 	if *flagAdd {
+		if *flagClip {
+			usage()
+		}
 		k.add(name)
 		return
 	}
@@ -287,7 +297,11 @@ func (c *Keychain) code(name string) string {
 }
 
 func (c *Keychain) show(name string) {
-	fmt.Printf("%s\n", c.code(name))
+	code := c.code(name)
+	if *flagClip {
+		clipboard.WriteAll(code)
+	}
+	fmt.Printf("%s\n", code)
 }
 
 func (c *Keychain) showAll() {

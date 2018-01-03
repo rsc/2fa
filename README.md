@@ -22,7 +22,8 @@ By default the new key generates 6-digit codes; the `-7` and `-8` flags select
 `2fa -list` lists the names of all the keys in the keychain.
 
 `2fa name` prints a two-factor authentication code from the key with the
-given name.
+given name. If `-clip` is specified, `2fa` also copies to the code to the system
+clipboard.
 
 With no arguments, `2fa` prints two-factor authentication codes from all
 known time-based keys.
