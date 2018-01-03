@@ -78,6 +78,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/atotto/clipboard"
 )
 
 var (
@@ -86,13 +88,14 @@ var (
 	flagHotp = flag.Bool("hotp", false, "add key as HOTP (counter-based) key")
 	flag7    = flag.Bool("7", false, "generate 7-digit code")
 	flag8    = flag.Bool("8", false, "generate 8-digit code")
+	flagClip = flag.Bool("clip", false, "copy code to the clipboard")
 )
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "usage:\n")
 	fmt.Fprintf(os.Stderr, "\t2fa -add [-7] [-8] [-hotp] keyname\n")
 	fmt.Fprintf(os.Stderr, "\t2fa -list\n")
-	fmt.Fprintf(os.Stderr, "\t2fa keyname\n")
+	fmt.Fprintf(os.Stderr, "\t2fa [-clip] keyname\n")
 	os.Exit(2)
 }
 
@@ -126,7 +129,7 @@ func main() {
 		k.add(name)
 		return
 	}
-	k.show(name)
+	k.show(name, *flagClip)
 }
 
 type Keychain struct {
@@ -285,8 +288,12 @@ func (c *Keychain) code(name string) string {
 	return fmt.Sprintf("%0*d", k.digits, code)
 }
 
-func (c *Keychain) show(name string) {
-	fmt.Printf("%s\n", c.code(name))
+func (c *Keychain) show(name string, clip bool) {
+	code := c.code(name)
+	if clip {
+		clipboard.WriteAll(code)
+	}
+	fmt.Printf("%s\n", code)
 }
 
 func (c *Keychain) showAll() {
