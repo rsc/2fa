@@ -231,6 +231,7 @@ func (c *Keychain) add(name string) {
 		log.Fatalf("error reading key: %v", err)
 	}
 	text = strings.Map(noSpace, text)
+	text += strings.Repeat("=", -len(text)&7) // pad to 8 bytes
 	if _, err := decodeKey(text); err != nil {
 		log.Fatalf("invalid key: %v", err)
 	}
