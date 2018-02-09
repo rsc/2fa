@@ -196,7 +196,7 @@ func readKeychain(file string) *Keychain {
 					continue
 				}
 				if len(f) == 5 && len(f[4]) == counterLen {
-					_, err := strconv.ParseUint(string(f[3]), 10, 64)
+					_, err := strconv.ParseUint(string(f[4]), 10, 64)
 					if err == nil {
 						// Valid counter.
 						k.offset = offset - counterLen
