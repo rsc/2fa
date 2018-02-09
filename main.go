@@ -91,11 +91,12 @@ var (
 	flag8    = flag.Bool("8", false, "generate 8-digit code")
 	flagClip = flag.Bool("clip", false, "copy code to the clipboard")
 	flag10   = flag.Bool("10", false, "use a 10-second interval")
+	flag20   = flag.Bool("20", false, "use a 20-second interval")
 )
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "usage:\n")
-	fmt.Fprintf(os.Stderr, "\t2fa -add [-7] [-8] [-10] [-hotp] keyname\n")
+	fmt.Fprintf(os.Stderr, "\t2fa -add [-7] [-8] [-10] [-20] [-hotp] keyname\n")
 	fmt.Fprintf(os.Stderr, "\t2fa -list\n")
 	fmt.Fprintf(os.Stderr, "\t2fa [-clip] keyname\n")
 	os.Exit(2)
@@ -124,6 +125,7 @@ func main() {
 		return
 	}
 	if flag.NArg() != 1 {
+		fmt.Fprintf(os.Stderr, "errhere: %d\n", flag.NArg())
 		usage()
 	}
 	name := flag.Arg(0)
@@ -178,13 +180,13 @@ func readKeychain(file string) *Keychain {
 		if len(f) == 1 && len(f[0]) == 0 {
 			continue
 		}
-		if len(f) >= 4 && len(f[1]) == 1 && '6' <= f[1][0] && f[1][0] <= '8' && len(f[2]) == 2 && (f[2] == '30' || f[2] == '10') {
+		if len(f) >= 4 && len(f[1]) == 1 && '6' <= f[1][0] && f[1][0] <= '8' && len(f[2]) == 2 {
 			var k Key
 			name := string(f[0])
 			k.digits = int(f[1][0] - '0')
-			k.interval, err := strconv.Atoi(string(f[2]))
+			k.interval, err = strconv.Atoi(string(f[2]))
 			if err != nil {
-				log.fatal(err)
+				log.Fatal(err)
 			}
 			raw, err := decodeKey(string(f[3]))
 			if err == nil {
@@ -244,6 +246,11 @@ func (c *Keychain) add(name string) {
 	latency := 30
 	if *flag10 {
 		latency = 10
+		if *flag20 {
+			log.Fatalf("cannot use -10 and -20 together")
+		}
+	} else if *flag20 {
+		latency = 20
 	}
 
 	fmt.Fprintf(os.Stderr, "2fa key for %s: ", name)
@@ -353,5 +360,5 @@ func hotp(key []byte, counter uint64, digits int) int {
 }
 
 func totp(key []byte, t time.Time, digits int, latency int) int {
-	return hotp(key, uint64(t.UnixNano())/(latency*10e8), digits)
+	return hotp(key, uint64(t.UnixNano())/(uint64(latency)*10e8), digits)
 }
