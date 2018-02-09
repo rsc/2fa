@@ -125,7 +125,6 @@ func main() {
 		return
 	}
 	if flag.NArg() != 1 {
-		fmt.Fprintf(os.Stderr, "errhere: %d\n", flag.NArg())
 		usage()
 	}
 	name := flag.Arg(0)
