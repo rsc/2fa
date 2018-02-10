@@ -148,9 +148,9 @@ type Keychain struct {
 }
 
 type Key struct {
-	raw    []byte
-	digits int
-	offset int // offset of counter
+	raw      []byte
+	digits   int
+	offset   int // offset of counter
 	interval int // interval of generation
 }
 
