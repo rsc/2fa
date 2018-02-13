@@ -1,0 +1,17 @@
+name: 2fa
+version: git
+summary: Two-factor authentication agent
+description: |
+  2fa is a tool which provides two-factor authentication on the command line.
+grade: stable
+confinement: strict
+
+apps:
+  2fa:
+    command: 2fa
+
+parts:
+  2fa:
+    source: .
+    plugin: go
+    go-importpath: github.com/rsc/2fa
