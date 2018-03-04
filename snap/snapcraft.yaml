@@ -14,4 +14,4 @@ parts:
   2fa:
     source: .
     plugin: go
-    go-importpath: github.com/rsc/2fa
+    go-importpath: rsc.io/2fa
