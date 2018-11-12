@@ -32,7 +32,9 @@ The default time-based authentication codes are derived from a hash of the
 key and the current time, so it is important that the system clock have at
 least one-minute accuracy.
 
-The keychain is stored unencrypted in the text file `$HOME/.2fa`.
+The keychain is stored unencrypted in the text file `$HOME/.2fa` unless another
+path is provided via the `-keychain` parameter or the `KEYCHAIN` environment
+variable.
 
 ## Example
 
