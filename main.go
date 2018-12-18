@@ -266,7 +266,7 @@ func (c *Keychain) add(name string) {
 	}
 }
 
-func (c *Keychain) code(name string) string {
+func (c *Keychain) code(name string) (codeStr string, secondLeft int) {
 	k, ok := c.keys[name]
 	if !ok {
 		log.Fatalf("no such key %q", name)
@@ -291,17 +291,20 @@ func (c *Keychain) code(name string) string {
 		}
 	} else {
 		// Time-based key.
-		code = totp(k.raw, time.Now(), k.digits)
+		now := time.Now()
+		code = totp(k.raw, now, k.digits)
+		secondLeft = 30 - (now.Second() % 30)
 	}
-	return fmt.Sprintf("%0*d", k.digits, code)
+	codeStr = fmt.Sprintf("%0*d", k.digits, code)
+	return
 }
 
 func (c *Keychain) show(name string) {
-	code := c.code(name)
+	code, secondLeft := c.code(name)
 	if *flagClip {
 		clipboard.WriteAll(code)
 	}
-	fmt.Printf("%s\n", code)
+	fmt.Printf("%10s - %02d second(s) left\n", code, secondLeft)
 }
 
 func (c *Keychain) showAll() {
@@ -317,10 +320,18 @@ func (c *Keychain) showAll() {
 	for _, name := range names {
 		k := c.keys[name]
 		code := strings.Repeat("-", k.digits)
+		secondLeft := -1
 		if k.offset == 0 {
-			code = c.code(name)
+			code, secondLeft = c.code(name)
 		}
-		fmt.Printf("%-*s\t%s\n", max, code, name)
+		fmt.Printf("%-*s", max, code)
+		if secondLeft != -1 {
+			fmt.Printf(" | %02d second(s) left", secondLeft)
+
+		} else {
+			fmt.Print(" |                  ")
+		}
+		fmt.Printf(" | %s\n", name)
 	}
 }
 
