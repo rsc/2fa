@@ -33,7 +33,9 @@
 // the key and the current time, so it is important that the system clock have
 // at least one-minute accuracy.
 //
-// The keychain is stored unencrypted in the text file $HOME/.2fa.
+// The keychain is stored unencrypted in the text file $HOME/.2fa unless another
+// path is provided via the “-keychain“ parameter or the “KEYCHAIN“ environment
+// variable.
 //
 // Example
 //
@@ -84,12 +86,13 @@ import (
 )
 
 var (
-	flagAdd  = flag.Bool("add", false, "add a key")
-	flagList = flag.Bool("list", false, "list keys")
-	flagHotp = flag.Bool("hotp", false, "add key as HOTP (counter-based) key")
-	flag7    = flag.Bool("7", false, "generate 7-digit code")
-	flag8    = flag.Bool("8", false, "generate 8-digit code")
-	flagClip = flag.Bool("clip", false, "copy code to the clipboard")
+	flagAdd      = flag.Bool("add", false, "add a key")
+	flagList     = flag.Bool("list", false, "list keys")
+	flagHotp     = flag.Bool("hotp", false, "add key as HOTP (counter-based) key")
+	flag7        = flag.Bool("7", false, "generate 7-digit code")
+	flag8        = flag.Bool("8", false, "generate 8-digit code")
+	flagClip     = flag.Bool("clip", false, "copy code to the clipboard")
+	flagKeychain = flag.String("keychain", "~/.2fa", "path to keychain")
 )
 
 func usage() {
@@ -97,6 +100,7 @@ func usage() {
 	fmt.Fprintf(os.Stderr, "\t2fa -add [-7] [-8] [-hotp] keyname\n")
 	fmt.Fprintf(os.Stderr, "\t2fa -list\n")
 	fmt.Fprintf(os.Stderr, "\t2fa [-clip] keyname\n")
+	fmt.Fprintf(os.Stderr, "\n\t-keychain can be added to any command to specify path to keychain\n")
 	os.Exit(2)
 }
 
@@ -106,7 +110,14 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
-	k := readKeychain(filepath.Join(os.Getenv("HOME"), ".2fa"))
+	var k *Keychain
+	if *flagKeychain != "" {
+		k = readKeychain(*flagKeychain)
+	} else if os.Getenv("KEYCHAIN") != "" {
+		k = readKeychain(os.Getenv("KEYCHAIN"))
+	} else {
+		k = readKeychain(filepath.Join(os.Getenv("HOME"), ".2fa"))
+	}
 
 	if *flagList {
 		if flag.NArg() != 0 {
