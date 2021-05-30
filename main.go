@@ -9,6 +9,7 @@
 //	2fa -add [-7] [-8] [-hotp] name
 //	2fa -list
 //	2fa [-clip] name
+//	2fa -mv name new-name
 //
 // “2fa -add name” adds a new key to the 2fa keychain with the given name.
 // It prints a prompt to standard error and reads a two-factor key from standard input.
@@ -25,6 +26,8 @@
 // “2fa name” prints a two-factor authentication code from the key with the
 // given name. If “-clip” is specified, 2fa also copies the code to the system
 // clipboard.
+//
+// “2fa -mv” renames the key name to a new name.
 //
 // With no arguments, 2fa prints two-factor authentication codes from all
 // known time-based keys.
@@ -70,6 +73,7 @@ import (
 	"encoding/binary"
 	"flag"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
@@ -90,6 +94,7 @@ var (
 	flag7    = flag.Bool("7", false, "generate 7-digit code")
 	flag8    = flag.Bool("8", false, "generate 8-digit code")
 	flagClip = flag.Bool("clip", false, "copy code to the clipboard")
+	flagMv   = flag.Bool("mv", false, "rename key name")
 )
 
 func usage() {
@@ -97,6 +102,7 @@ func usage() {
 	fmt.Fprintf(os.Stderr, "\t2fa -add [-7] [-8] [-hotp] keyname\n")
 	fmt.Fprintf(os.Stderr, "\t2fa -list\n")
 	fmt.Fprintf(os.Stderr, "\t2fa [-clip] keyname\n")
+	fmt.Fprintf(os.Stderr, "\t2fa -mv keyname new-keyname\n")
 	os.Exit(2)
 }
 
@@ -122,7 +128,7 @@ func main() {
 		k.showAll()
 		return
 	}
-	if flag.NArg() != 1 {
+	if flag.NArg() != 1 && !*flagMv {
 		usage()
 	}
 	name := flag.Arg(0)
@@ -130,10 +136,21 @@ func main() {
 		log.Fatal("name must not contain spaces")
 	}
 	if *flagAdd {
-		if *flagClip {
+		if *flagClip || *flagMv {
 			usage()
 		}
 		k.add(name)
+		return
+	}
+	if *flagMv {
+		if flag.NArg() != 2 {
+			usage()
+		}
+		newName := flag.Arg(1)
+		if strings.IndexFunc(newName, unicode.IsSpace) >= 0 {
+			log.Fatal("new-name must not contain spaces")
+		}
+		k.mv(name, newName)
 		return
 	}
 	k.show(name)
@@ -263,6 +280,43 @@ func (c *Keychain) add(name string) {
 	}
 	if err := f.Close(); err != nil {
 		log.Fatalf("adding key: %v", err)
+	}
+}
+
+func (c *Keychain) mv(from, to string) {
+	k, ok := c.keys[from]
+	if !ok {
+		log.Fatalf("no such key %q", from)
+	}
+	if _, ok = c.keys[to]; ok {
+		log.Fatalf("key %q already exists", to)
+	}
+	c.keys[to] = k
+	delete(c.keys, from)
+
+	t, err := ioutil.TempFile(os.Getenv("HOME"), ".2fa-tmp-")
+	if err != nil {
+		log.Fatalf("creating temp file: %v", err)
+	}
+	t.Chmod(0600)
+	defer os.Remove(t.Name())
+
+	for name, key := range c.keys {
+		line := fmt.Sprintf("%s %d %s", name, key.digits, encodeKey(key.raw))
+		if key.offset > 0 {
+			line += " " + strings.Repeat("0", 20)
+		}
+		line += "\n"
+		if _, err := t.Write([]byte(line)); err != nil {
+			log.Fatalf("adding key: %v", err)
+		}
+	}
+	if err := t.Close(); err != nil {
+		log.Fatalf("closing temp file: %v", err)
+	}
+	err = os.Rename(t.Name(), c.filePath())
+	if err != nil {
+		log.Fatalf("updating keychain: %v", err)
 	}
 }
 
