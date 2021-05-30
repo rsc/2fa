@@ -328,6 +328,10 @@ func decodeKey(key string) ([]byte, error) {
 	return base32.StdEncoding.DecodeString(strings.ToUpper(key))
 }
 
+func encodeKey(raw []byte) string {
+	return base32.StdEncoding.EncodeToString(raw)
+}
+
 func hotp(key []byte, counter uint64, digits int) int {
 	h := hmac.New(sha1.New, key)
 	binary.Write(h, binary.BigEndian, counter)
