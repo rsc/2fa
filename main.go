@@ -324,6 +324,21 @@ func (c *Keychain) showAll() {
 	}
 }
 
+func (c *Keychain) filePath() string {
+	fp := filepath.Join(os.Getenv("HOME"), ".2fa")
+	fi, err := os.Lstat(fp)
+	if err != nil {
+		log.Fatalf("keychain info: %v", err)
+	}
+	if fi.Mode().Type() == fs.ModeSymlink {
+		fp, err = os.Readlink(fp)
+		if err != nil {
+			log.Fatalf("keychain symlink: %v", err)
+		}
+	}
+	return fp
+}
+
 func decodeKey(key string) ([]byte, error) {
 	return base32.StdEncoding.DecodeString(strings.ToUpper(key))
 }
