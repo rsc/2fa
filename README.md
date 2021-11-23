@@ -2,6 +2,10 @@
 
 Usage:
 
+    #using go 1.17 or greater
+    go install rsc.io/2fa@latest 
+
+    #go versions below 1.17
     go get -u rsc.io/2fa
 
     2fa -add [-7] [-8] [-hotp] name
