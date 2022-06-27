@@ -2,7 +2,7 @@
 
 Usage:
 
-    go get -u rsc.io/2fa
+    go install rsc.io/2fa@latest
 
     2fa -add [-7] [-8] [-hotp] name
     2fa -list
@@ -56,4 +56,4 @@ Or to type less:
 
     $ 2fa
     268346	github
-    $ 
+    $
