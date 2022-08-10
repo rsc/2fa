@@ -23,7 +23,12 @@ By default the new key generates 6-digit codes; the `-7` and `-8` flags select
 
 `2fa name` prints a two-factor authentication code from the key with the
 given name. If `-clip` is specified, `2fa` also copies to the code to the system
-clipboard.
+clipboard. If you have a problems with `-clip` flag - check if you have installed any
+any clipboard management utility like `xclip`.
+
+For instance in Ubuntu:
+
+    sudo apt install xclip
 
 With no arguments, `2fa` prints two-factor authentication codes from all
 known time-based keys.
@@ -55,5 +60,5 @@ Then whenever GitHub prompts for a 2FA code, run 2fa to obtain one:
 Or to type less:
 
     $ 2fa
-    268346	github
+    268346 github
     $ 
