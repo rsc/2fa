@@ -8,16 +8,24 @@ package clipboard
 
 import (
 	"errors"
+	"os"
 	"os/exec"
 )
 
 const (
-	xsel  = "xsel"
-	xclip = "xclip"
+	xsel               = "xsel"
+	xclip              = "xclip"
+	powershellExe      = "powershell.exe"
+	clipExe            = "clip.exe"
+	wlcopy             = "wl-copy"
+	wlpaste            = "wl-paste"
+	termuxClipboardGet = "termux-clipboard-get"
+	termuxClipboardSet = "termux-clipboard-set"
 )
 
 var (
 	Primary bool
+	trimDos bool
 
 	pasteCmdArgs []string
 	copyCmdArgs  []string
@@ -28,10 +36,30 @@ var (
 	xclipPasteArgs = []string{xclip, "-out", "-selection", "clipboard"}
 	xclipCopyArgs  = []string{xclip, "-in", "-selection", "clipboard"}
 
-	missingCommands = errors.New("No clipboard utilities available. Please install xsel or xclip.")
+	powershellExePasteArgs = []string{powershellExe, "Get-Clipboard"}
+	clipExeCopyArgs        = []string{clipExe}
+
+	wlpasteArgs = []string{wlpaste, "--no-newline"}
+	wlcopyArgs  = []string{wlcopy}
+
+	termuxPasteArgs = []string{termuxClipboardGet}
+	termuxCopyArgs  = []string{termuxClipboardSet}
+
+	missingCommands = errors.New("No clipboard utilities available. Please install xsel, xclip, wl-clipboard or Termux:API add-on for termux-clipboard-get/set.")
 )
 
 func init() {
+	if os.Getenv("WAYLAND_DISPLAY") != "" {
+		pasteCmdArgs = wlpasteArgs
+		copyCmdArgs = wlcopyArgs
+
+		if _, err := exec.LookPath(wlcopy); err == nil {
+			if _, err := exec.LookPath(wlpaste); err == nil {
+				return
+			}
+		}
+	}
+
 	pasteCmdArgs = xclipPasteArgs
 	copyCmdArgs = xclipCopyArgs
 
@@ -44,6 +72,25 @@ func init() {
 
 	if _, err := exec.LookPath(xsel); err == nil {
 		return
+	}
+
+	pasteCmdArgs = termuxPasteArgs
+	copyCmdArgs = termuxCopyArgs
+
+	if _, err := exec.LookPath(termuxClipboardSet); err == nil {
+		if _, err := exec.LookPath(termuxClipboardGet); err == nil {
+			return
+		}
+	}
+
+	pasteCmdArgs = powershellExePasteArgs
+	copyCmdArgs = clipExeCopyArgs
+	trimDos = true
+
+	if _, err := exec.LookPath(clipExe); err == nil {
+		if _, err := exec.LookPath(powershellExe); err == nil {
+			return
+		}
 	}
 
 	Unsupported = true
@@ -72,7 +119,11 @@ func readAll() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(out), nil
+	result := string(out)
+	if trimDos && len(result) > 1 {
+		result = result[:len(result)-2]
+	}
+	return result, nil
 }
 
 func writeAll(text string) error {
