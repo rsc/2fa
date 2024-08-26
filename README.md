@@ -32,7 +32,7 @@ The default time-based authentication codes are derived from a hash of the
 key and the current time, so it is important that the system clock have at
 least one-minute accuracy.
 
-The keychain is stored unencrypted in the text file `$HOME/.2fa`.
+The keychain is stored unencrypted in the text file `$HOME/.2fa`. To **remove an unused 2fa key**, you can just delete the entry of the key from this file. Just be careful that the key you are deleting is really not being used otherwise you can be locked out of your account.
 
 ## Example
 
