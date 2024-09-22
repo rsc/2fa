@@ -300,8 +300,9 @@ func (c *Keychain) show(name string) {
 	code := c.code(name)
 	if *flagClip {
 		clipboard.WriteAll(code)
+	} else {
+		fmt.Printf("%s\n", code)
 	}
-	fmt.Printf("%s\n", code)
 }
 
 func (c *Keychain) showAll() {
