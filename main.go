@@ -90,11 +90,13 @@ var (
 	flag7    = flag.Bool("7", false, "generate 7-digit code")
 	flag8    = flag.Bool("8", false, "generate 8-digit code")
 	flagClip = flag.Bool("clip", false, "copy code to the clipboard")
+	flag10   = flag.Bool("10", false, "use a 10-second interval")
+	flag20   = flag.Bool("20", false, "use a 20-second interval")
 )
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "usage:\n")
-	fmt.Fprintf(os.Stderr, "\t2fa -add [-7] [-8] [-hotp] keyname\n")
+	fmt.Fprintf(os.Stderr, "\t2fa -add [-7] [-8] [-10] [-20] [-hotp] keyname\n")
 	fmt.Fprintf(os.Stderr, "\t2fa -list\n")
 	fmt.Fprintf(os.Stderr, "\t2fa [-clip] keyname\n")
 	os.Exit(2)
@@ -146,9 +148,10 @@ type Keychain struct {
 }
 
 type Key struct {
-	raw    []byte
-	digits int
-	offset int // offset of counter
+	raw      []byte
+	digits   int
+	offset   int // offset of counter
+	interval int // interval of generation
 }
 
 const counterLen = 20
@@ -176,19 +179,23 @@ func readKeychain(file string) *Keychain {
 		if len(f) == 1 && len(f[0]) == 0 {
 			continue
 		}
-		if len(f) >= 3 && len(f[1]) == 1 && '6' <= f[1][0] && f[1][0] <= '8' {
+		if len(f) >= 4 && len(f[1]) == 1 && '6' <= f[1][0] && f[1][0] <= '8' && len(f[2]) == 2 {
 			var k Key
 			name := string(f[0])
 			k.digits = int(f[1][0] - '0')
-			raw, err := decodeKey(string(f[2]))
+			k.interval, err = strconv.Atoi(string(f[2]))
+			if err != nil {
+				log.Fatal(err)
+			}
+			raw, err := decodeKey(string(f[3]))
 			if err == nil {
 				k.raw = raw
-				if len(f) == 3 {
+				if len(f) == 4 {
 					c.keys[name] = k
 					continue
 				}
-				if len(f) == 4 && len(f[3]) == counterLen {
-					_, err := strconv.ParseUint(string(f[3]), 10, 64)
+				if len(f) == 5 && len(f[4]) == counterLen {
+					_, err := strconv.ParseUint(string(f[4]), 10, 64)
 					if err == nil {
 						// Valid counter.
 						k.offset = offset - counterLen
@@ -235,6 +242,16 @@ func (c *Keychain) add(name string) {
 		size = 8
 	}
 
+	latency := 30
+	if *flag10 {
+		latency = 10
+		if *flag20 {
+			log.Fatalf("cannot use -10 and -20 together")
+		}
+	} else if *flag20 {
+		latency = 20
+	}
+
 	fmt.Fprintf(os.Stderr, "2fa key for %s: ", name)
 	text, err := bufio.NewReader(os.Stdin).ReadString('\n')
 	if err != nil {
@@ -246,10 +263,11 @@ func (c *Keychain) add(name string) {
 		log.Fatalf("invalid key: %v", err)
 	}
 
-	line := fmt.Sprintf("%s %d %s", name, size, text)
+	line := fmt.Sprintf("%s %d %d %s", name, size, latency, text)
 	if *flagHotp {
 		line += " " + strings.Repeat("0", 20)
 	}
+
 	line += "\n"
 
 	f, err := os.OpenFile(c.file, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0600)
@@ -291,7 +309,7 @@ func (c *Keychain) code(name string) string {
 		}
 	} else {
 		// Time-based key.
-		code = totp(k.raw, time.Now(), k.digits)
+		code = totp(k.raw, time.Now(), k.digits, k.interval)
 	}
 	return fmt.Sprintf("%0*d", k.digits, code)
 }
@@ -340,6 +358,6 @@ func hotp(key []byte, counter uint64, digits int) int {
 	return int(v % d)
 }
 
-func totp(key []byte, t time.Time, digits int) int {
-	return hotp(key, uint64(t.UnixNano())/30e9, digits)
+func totp(key []byte, t time.Time, digits int, latency int) int {
+	return hotp(key, uint64(t.UnixNano())/(uint64(latency)*10e8), digits)
 }
