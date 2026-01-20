@@ -84,12 +84,17 @@ import (
 )
 
 var (
-	flagAdd  = flag.Bool("add", false, "add a key")
-	flagList = flag.Bool("list", false, "list keys")
-	flagHotp = flag.Bool("hotp", false, "add key as HOTP (counter-based) key")
-	flag7    = flag.Bool("7", false, "generate 7-digit code")
-	flag8    = flag.Bool("8", false, "generate 8-digit code")
-	flagClip = flag.Bool("clip", false, "copy code to the clipboard")
+	flagAdd    = flag.Bool("add", false, "add a key")
+	flagList   = flag.Bool("list", false, "list keys")
+	flagHotp   = flag.Bool("hotp", false, "add key as HOTP (counter-based) key")
+	flag7      = flag.Bool("7", false, "generate 7-digit code")
+	flag8      = flag.Bool("8", false, "generate 8-digit code")
+	flagClip   = flag.Bool("clip", false, "copy code to the clipboard")
+	flagExport = flag.Bool("export", false, "export a key (encrypted with age)")
+	flagImport = flag.Bool("import", false, "import an encrypted key")
+	flagKeygen = flag.Bool("keygen", false, "generate age identity for sharing")
+	flagAgeRecipient = flag.String("age-recipient", "", "age public key of recipient (for export)")
+	flagAgeIdentity  = flag.String("age-identity", "", "path to age identity file (for import)")
 )
 
 func usage() {
@@ -97,6 +102,9 @@ func usage() {
 	fmt.Fprintf(os.Stderr, "\t2fa -add [-7] [-8] [-hotp] keyname\n")
 	fmt.Fprintf(os.Stderr, "\t2fa -list\n")
 	fmt.Fprintf(os.Stderr, "\t2fa [-clip] keyname\n")
+	fmt.Fprintf(os.Stderr, "\t2fa -keygen [-o ~/.age/key.txt]\n")
+	fmt.Fprintf(os.Stderr, "\t2fa -export -age-recipient AGE_PUBLIC_KEY keyname\n")
+	fmt.Fprintf(os.Stderr, "\t2fa -import -age-identity ~/.age/key.txt < encrypted.age\n")
 	os.Exit(2)
 }
 
@@ -106,7 +114,44 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
+	// Keygen mode (doesn't need keychain)
+	if *flagKeygen {
+		if err := generateAgeIdentity(); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
 	k := readKeychain(filepath.Join(os.Getenv("HOME"), ".2fa"))
+
+	// Export mode
+	if *flagExport {
+		if flag.NArg() != 1 {
+			usage()
+		}
+		if *flagAgeRecipient == "" {
+			log.Fatal("--age-recipient required for export")
+		}
+		name := flag.Arg(0)
+		if err := k.exportKey(name, []string{*flagAgeRecipient}, os.Stdout); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
+	// Import mode
+	if *flagImport {
+		if flag.NArg() != 0 {
+			usage()
+		}
+		if *flagAgeIdentity == "" {
+			log.Fatal("--age-identity required for import")
+		}
+		if err := k.importKey(os.Stdin, []string{*flagAgeIdentity}); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 
 	if *flagList {
 		if flag.NArg() != 0 {
