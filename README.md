@@ -7,6 +7,9 @@ Usage:
     2fa -add [-7] [-8] [-hotp] name
     2fa -list
     2fa name
+    2fa -keygen
+    2fa -export -age-recipient PUBLIC_KEY name
+    2fa -import -age-identity PRIVATE_KEY_FILE
 
 `2fa -add name` adds a new key to the 2fa keychain with the given name. It
 prints a prompt to standard error and reads a two-factor key from standard
@@ -33,6 +36,45 @@ key and the current time, so it is important that the system clock have at
 least one-minute accuracy.
 
 The keychain is stored unencrypted in the text file `$HOME/.2fa`.
+
+## Sharing Keys Securely
+
+Share 2FA keys between machines without servers or infrastructure:
+
+`2fa -keygen` generates an age encryption identity. Save the output to a file (e.g., `~/.age/key.txt`). Share your public key with others who will send you keys.
+
+`2fa -export -age-recipient PUBLIC_KEY name` encrypts a key for a specific recipient. The recipient's public key is their age public key (looks like `age1...`). Output is encrypted data safe to share via email, Slack, USB, etc.
+
+`2fa -import -age-identity PRIVATE_KEY_FILE` decrypts and imports a shared key using your private identity file.
+
+Example workflow:
+
+    # Generate your encryption key
+    $ 2fa -keygen > ~/.age/key.txt
+    $ grep "public key:" ~/.age/key.txt
+    # public key: age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p
+
+    # Share your public key with Alice
+
+    # Alice checks what keys she has
+    $ 2fa -list
+    github
+    aws-prod
+
+    # Alice exports her github key for you
+    $ 2fa -export -age-recipient age1ql3z... github > github.age
+
+    # Alice sends you github.age via email/Slack/etc
+
+    # You import it
+    $ 2fa -import -age-identity ~/.age/key.txt < github.age
+    2fa: imported key "github" (totp, 6 digits)
+
+    # Now you can use it
+    $ 2fa github
+    123456
+
+All encryption happens locally. No servers, no APIs, no infrastructure required.
 
 ## Example
 
